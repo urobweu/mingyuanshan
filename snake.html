@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>贪吃蛇对战 — 明园山工作室</title>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body{ display:flex; flex-direction:column; align-items:center; background:#0f172a; color:#fff; font-family:"Microsoft Yahei",Arial; padding:18px 16px 40px; }
+.topbar{ width:100%; max-width:640px; display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; font-size:13px; }
+.topbar a{ color:#94a3b8; text-decoration:none; border:1px solid #334155; padding:7px 13px; border-radius:4px; }
+.topbar a:hover{ color:#4ade80; border-color:#4ade80; }
+.topbar span{ color:#64748b; letter-spacing:.1em; }
+.header-box{ margin-bottom:14px; display:flex; gap:40px; font-size:20px; flex-wrap:wrap; justify-content:center; }
+#scoreText{ font-weight:bold; color:#4ade80; }
+#aiScoreText{ font-weight:bold; color:#f87171; }
+#timeText{ font-weight:bold; color:#facc15; }
+canvas{ border:2px solid #22c55e; background:#020617; border-radius:6px; max-width:100%; }
+.btn-row{ margin-top:18px; display:flex; gap:12px; flex-wrap:wrap; justify-content:center; }
+#restartBtn,#menuBtn{ padding:11px 20px; font-size:15px; font-weight:bold; cursor:pointer; background:#1e293b; color:#e2e8f0; border:1px solid #334155; border-radius:6px; transition:.2s; }
+#restartBtn:hover,#menuBtn:hover{ border-color:#22c55e; color:#4ade80; }
+.tip{ margin-top:12px; color:#94a3b8; font-size:14px; text-align:center; }
+.main-menu,.difficulty-menu,.map-menu{ position:fixed; inset:0; background:#0f172a; display:flex; justify-content:center; align-items:center; flex-direction:column; z-index:999; }
+.difficulty-menu,.map-menu{ display:none; z-index:1000; }
+.menu-title{ font-size:40px; margin-bottom:44px; color:#4ade80; }
+.menu-btn{ width:250px; padding:16px; margin:10px; font-size:19px; border:1px solid #22c55e; border-radius:8px; cursor:pointer; background:#14532d; color:#dcfce7; transition:.2s; }
+.menu-btn:hover{ transform:scale(1.03); background:#166534; }
+.diff-title,.map-title{ font-size:30px; margin-bottom:26px; color:#facc15; }
+.map-title{ color:#4ade80; }
+.diff-btn,.map-btn{ width:250px; padding:12px; margin:6px; font-size:17px; border:1px solid #334155; border-radius:7px; cursor:pointer; background:#1e293b; color:#e2e8f0; transition:.2s; }
+.diff-btn:hover,.map-btn:hover{ border-color:#4ade80; color:#4ade80; }
+.back-main{ margin-top:16px; border-color:#475569; }
+.game-over-modal{ position:fixed; inset:0; background:rgba(0,0,0,.75); display:none; justify-content:center; align-items:center; z-index:998; }
+.modal-content{ background:#1e293b; padding:34px 44px; border-radius:12px; text-align:center; border:1px solid #22c55e; max-width:90%; }
+.modal-content h2{ font-size:26px; margin-bottom:14px; color:#f87171; }
+.score-show{ font-size:19px; margin:9px 0; }
+.rank-show{ font-size:24px; font-weight:bold; color:#facc15; margin:16px 0; }
+.modal-restart,.modal-menu{ margin:7px; padding:10px 22px; font-size:16px; background:#14532d; color:#dcfce7; border:1px solid #22c55e; border-radius:7px; cursor:pointer; }
+.modal-restart:hover,.modal-menu:hover{ background:#166534; }
+</style>
+</head>
+<body>
+<div class="topbar"><a href="mini-games.html">← 返回成熟小游戏</a><span>MINGYUANSHAN / SNAKE</span></div>
+<div class="header-box">
+  <div id="scoreText">得分：0</div>
+  <div id="aiScoreText">AI得分：0</div>
+  <div id="timeText">时间：60</div>
+</div>
+<canvas id="gameCanvas" width="600" height="600"></canvas>
+<div class="btn-row">
+  <button id="restartBtn">重新开始</button>
+  <button id="menuBtn">返回主菜单</button>
+</div>
+<div class="tip">方向键控制移动 · 单人模式可选地图 · 人机模式可选难度</div>
+
+<div class="main-menu" id="mainMenu">
+  <h1 class="menu-title">贪吃蛇</h1>
+  <button class="menu-btn" id="singleBtn">单人游戏</button>
+  <button class="menu-btn" id="aiBattleBtn">人机对战</button>
+</div>
+
+<div class="map-menu" id="mapMenu">
+  <h2 class="map-title">选择单人地图</h2>
+  <button class="map-btn" data-map="default">默认地图</button>
+  <button class="map-btn" data-map="subway">地铁站</button>
+  <button class="map-btn" data-map="station">火车站</button>
+  <button class="map-btn" data-map="highspeed">高铁站</button>
+  <button class="map-btn back-main" id="mapBack">返回</button>
+</div>
+
+<div class="difficulty-menu" id="diffMenu">
+  <h2 class="diff-title">选择难度</h2>
+  <button class="diff-btn" data-speed="300">菜鸟</button>
+  <button class="diff-btn" data-speed="260">简单</button>
+  <button class="diff-btn" data-speed="220">正常</button>
+  <button class="diff-btn" data-speed="180">中等</button>
+  <button class="diff-btn" data-speed="140">困难</button>
+  <button class="diff-btn" data-speed="100">地狱</button>
+  <button class="diff-btn" data-speed="60">地狱18层</button>
+  <button class="diff-btn back-main" id="backToMain">返回</button>
+</div>
+
+<div class="game-over-modal" id="gameOverModal">
+  <div class="modal-content">
+    <h2 id="overTitle">游戏结束！</h2>
+    <div class="score-show" id="modalScore">得分：0</div>
+    <div class="score-show" id="modalAiScore"></div>
+    <div class="rank-show" id="modalRank">菜鸟</div>
+    <button class="modal-restart" id="modalRestartBtn">重新开始</button>
+    <button class="modal-menu" id="modalMenuBtn">返回主菜单</button>
+  </div>
+</div>
+
+<script>
+const canvas=document.getElementById("gameCanvas"),ctx=canvas.getContext("2d");
+const scoreText=document.getElementById("scoreText"),aiScoreText=document.getElementById("aiScoreText"),timeText=document.getElementById("timeText");
+const mainMenu=document.getElementById("mainMenu"),singleBtn=document.getElementById("singleBtn"),aiBattleBtn=document.getElementById("aiBattleBtn");
+const diffMenu=document.getElementById("diffMenu"),diffButtons=diffMenu.querySelectorAll(".diff-btn"),backToMain=document.getElementById("backToMain");
+const mapMenu=document.getElementById("mapMenu"),mapButtons=mapMenu.querySelectorAll(".map-btn"),mapBack=document.getElementById("mapBack");
+const gameOverModal=document.getElementById("gameOverModal"),overTitle=document.getElementById("overTitle"),modalScore=document.getElementById("modalScore"),modalAiScore=document.getElementById("modalAiScore"),modalRank=document.getElementById("modalRank");
+const box=30,CELLS=20;
+let baseSpeed=150,currentSpeed=baseSpeed,aiSpeed=180;
+let gameMode="single",currentMap="default",snake=[],aiSnake=[],food={x:0,y:0},dx=0,dy=0,aiDx=box,aiDy=0;
+let score=0,aiScore=0,gameTimer,aiTimer,countdownTimer,remainTime=60,gameStarted=false,isGameOver=false,walls=[];
+
+function loadMap(mapId){
+  walls=[];
+  switch(mapId){
+    case "default": break;
+    case "subway":
+      for(let x=2;x<=17;x++){walls.push({x,y:5});walls.push({x,y:14})}
+      for(let y=6;y<=13;y++){walls.push({x:5,y});walls.push({x:14,y})}
+      break;
+    case "station":
+      for(let y=3;y<=16;y++){walls.push({x:4,y});walls.push({x:15,y})}
+      for(let x=6;x<=13;x++){walls.push({x,y:8});walls.push({x,y:11})}
+      break;
+    case "highspeed":
+      for(let x=1;x<=18;x++){walls.push({x,y:4});walls.push({x,y:15})}
+      for(let y=6;y<=13;y++){walls.push({x:8,y});walls.push({x:11,y})}
+      for(let x=3;x<=6;x++)walls.push({x,y:9});
+      for(let x=13;x<=16;x++)walls.push({x,y:9});
+      break;
+  }
+}
+document.addEventListener("keydown",changeDirection);
+document.getElementById("restartBtn").onclick=resetGame;
+document.getElementById("menuBtn").onclick=backMenu;
+document.getElementById("modalRestartBtn").onclick=resetGame;
+document.getElementById("modalMenuBtn").onclick=backMenu;
+singleBtn.onclick=()=>{mainMenu.style.display="none";mapMenu.style.display="flex"};
+mapBack.onclick=()=>{mapMenu.style.display="none";mainMenu.style.display="flex"};
+mapButtons.forEach(btn=>{if(btn.id!=="mapBack")btn.onclick=function(){currentMap=this.dataset.map;gameMode="single";mapMenu.style.display="none";loadMap(currentMap);resetGame()}});
+aiBattleBtn.onclick=()=>{mainMenu.style.display="none";diffMenu.style.display="flex"};
+backToMain.onclick=()=>{diffMenu.style.display="none";mainMenu.style.display="flex"};
+diffButtons.forEach(btn=>{if(btn.id!=="backToMain")btn.onclick=function(){aiSpeed=Number(this.dataset.speed);gameMode="ai";diffMenu.style.display="none";loadMap("default");resetGame()}});
+
+function restartGameTimer(){clearInterval(gameTimer);gameTimer=setInterval(drawGame,currentSpeed)}
+function changeDirection(e){
+  if(isGameOver)return;
+  if(!gameStarted){gameStarted=true;restartGameTimer();if(gameMode==="ai")startAiTimer()}
+  const L=37,R=39,U=38,D=40,k=e.keyCode,up=dy===-box,down=dy===box,right=dx===box,left=dx===-box;
+  if(k===L&&!right){dx=-box;dy=0}
+  if(k===U&&!down){dx=0;dy=-box}
+  if(k===R&&!left){dx=box;dy=0}
+  if(k===D&&!up){dx=0;dy=box}
+}
+function getRank(s){if(s<30)return"菜鸟";if(s<60)return"高手";if(s<100)return"大神";if(s<150)return"上帝";return"无敌"}
+function aiMove(){
+  if(isGameOver)return;
+  const head=aiSnake[0];
+  if(head.x<food.x&&aiDx!==-box){aiDx=box;aiDy=0}
+  else if(head.x>food.x&&aiDx!==box){aiDx=-box;aiDy=0}
+  else if(head.y<food.y&&aiDy!==-box){aiDy=box;aiDx=0}
+  else if(head.y>food.y&&aiDy!==box){aiDy=-box;aiDx=0}
+  let nh={x:head.x+aiDx,y:head.y+aiDy};
+  if(nh.x<0||nh.x>=canvas.width){aiDx=-aiDx;nh.x=head.x+aiDx}
+  if(nh.y<0||nh.y>=canvas.height){aiDy=-aiDy;nh.y=head.y+aiDy}
+  aiSnake.unshift(nh);
+  if(nh.x===food.x&&nh.y===food.y){aiScore+=10;aiScoreText.innerText="AI得分："+aiScore;spawnFood()}
+  else aiSnake.pop();
+}
+function startAiTimer(){
+  clearInterval(aiTimer);aiTimer=setInterval(aiMove,aiSpeed);remainTime=60;
+  countdownTimer=setInterval(()=>{
+    remainTime--;timeText.innerText="时间："+remainTime;
+    if(remainTime<=0){overTitle.innerText=score>=aiScore?"对战结束！玩家胜利":"对战结束！AI胜利";gameOver()}
+  },1000);
+}
+function spawnFood(){
+  let ok=false;
+  while(!ok){
+    food.x=Math.floor(Math.random()*CELLS)*box;food.y=Math.floor(Math.random()*CELLS)*box;
+    ok=!walls.some(w=>w.x*box===food.x&&w.y*box===food.y);
+  }
+}
+function hitWall(px,py){return walls.some(w=>w.x===px/box&&w.y===py/box)}
+function drawGame(){
+  ctx.fillStyle="#020617";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#334155";walls.forEach(w=>ctx.fillRect(w.x*box,w.y*box,box-1,box-1));
+  for(let i=0;i<snake.length;i++){ctx.fillStyle=i===0?"#22c55e":"#4ade80";ctx.fillRect(snake[i].x+1,snake[i].y+1,box-2,box-2)}
+  if(gameMode==="ai")for(let i=0;i<aiSnake.length;i++){ctx.fillStyle=i===0?"#ef4444":"#f87171";ctx.fillRect(aiSnake[i].x+1,aiSnake[i].y+1,box-2,box-2)}
+  ctx.fillStyle="#facc15";ctx.beginPath();ctx.arc(food.x+box/2,food.y+box/2,box/2-3,0,Math.PI*2);ctx.fill();
+  const sx=snake[0].x+dx,sy=snake[0].y+dy;
+  if(gameMode==="ai"){
+    for(const seg of aiSnake){if(sx===seg.x&&sy===seg.y){overTitle.innerText="你撞到机器人！机器人获胜";gameOver();return}}
+    for(const seg of snake){if(aiSnake[0].x===seg.x&&aiSnake[0].y===seg.y){overTitle.innerText="机器人撞到你！玩家获胜";gameOver();return}}
+  }
+  if(sx<0||sx>=canvas.width||sy<0||sy>=canvas.height||hitWall(sx,sy)){overTitle.innerText="游戏结束！撞到墙体";gameOver();return}
+  for(let i=1;i<snake.length;i++){if(sx===snake[i].x&&sy===snake[i].y){overTitle.innerText="游戏结束！撞到自己";gameOver();return}}
+  if(sx===food.x&&sy===food.y){score+=10;scoreText.innerText="得分："+score;currentSpeed=Math.max(40,baseSpeed-score);restartGameTimer();spawnFood()}
+  else snake.pop();
+  snake.unshift({x:sx,y:sy});
+}
+function gameOver(){
+  clearInterval(gameTimer);clearInterval(aiTimer);clearInterval(countdownTimer);
+  gameStarted=false;isGameOver=true;
+  modalScore.innerText="玩家得分："+score;
+  modalAiScore.style.display=gameMode==="ai"?"block":"none";
+  if(gameMode==="ai")modalAiScore.innerText="AI得分："+aiScore;
+  modalRank.innerText=getRank(score);gameOverModal.style.display="flex";
+}
+function resetGame(){
+  gameOverModal.style.display="none";clearInterval(gameTimer);clearInterval(aiTimer);clearInterval(countdownTimer);
+  snake=[{x:10*box,y:10*box}];aiSnake=[{x:3*box,y:3*box}];dx=0;dy=0;aiDx=box;aiDy=0;
+  score=0;aiScore=0;scoreText.innerText="得分：0";aiScoreText.innerText="AI得分：0";timeText.innerText="时间：60";
+  gameStarted=false;isGameOver=false;currentSpeed=baseSpeed;remainTime=60;spawnFood();
+  ctx.fillStyle="#020617";ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle="#334155";walls.forEach(w=>ctx.fillRect(w.x*box,w.y*box,box-1,box-1));
+  ctx.fillStyle="#22c55e";ctx.fillRect(snake[0].x+1,snake[0].y+1,box-2,box-2);
+  if(gameMode==="ai"){ctx.fillStyle="#ef4444";ctx.fillRect(aiSnake[0].x+1,aiSnake[0].y+1,box-2,box-2)}
+  ctx.fillStyle="#facc15";ctx.beginPath();ctx.arc(food.x+box/2,food.y+box/2,box/2-3,0,Math.PI*2);ctx.fill();
+}
+function backMenu(){
+  gameOverModal.style.display="none";clearInterval(gameTimer);clearInterval(aiTimer);clearInterval(countdownTimer);
+  mainMenu.style.display="flex";
+}
+</script>
+</body>
+</html>

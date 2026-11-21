@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>俄罗斯方块 — 明园山工作室</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#e2e8f0;--sub:#94a3b8;--accent:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC",sans-serif;min-height:100vh;padding:18px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.topbar{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px}
+.topbar a{color:var(--sub);text-decoration:none;border:1px solid var(--line);padding:7px 13px;border-radius:4px}
+.topbar a:hover{color:var(--accent);border-color:var(--accent)}
+.topbar span{color:#64748b;letter-spacing:.1em}
+.wrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+canvas{border:2px solid var(--line);border-radius:6px;background:#0b1120;max-width:100%}
+.side{display:flex;flex-direction:column;gap:14px;min-width:150px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+.card span{display:block;font-size:10px;letter-spacing:.12em;color:var(--sub);margin-bottom:6px}
+.card b{font-size:26px;font-variant-numeric:tabular-nums}
+#next{display:block;margin-top:6px;border:1px solid var(--line);border-radius:4px;background:#0b1120}
+.btn{background:var(--accent);color:#052e16;border:0;border-radius:5px;padding:11px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+.btn:hover{filter:brightness(1.12)}
+.help{font-size:12px;color:var(--sub);line-height:2;max-width:560px;margin-top:16px;text-align:center}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 7px;color:var(--text)}
+.pause{position:absolute;inset:0;background:rgba(15,23,42,.88);display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.stage{position:relative}
+</style>
+</head>
+<body>
+<div class="topbar"><a href="mini-games.html">← 返回成熟小游戏</a><span>MINGYUANSHAN / TETRIS</span></div>
+<div class="wrap">
+  <div class="stage"><canvas id="cv" width="300" height="600"></canvas><div class="pause" id="pause"><h2>已暂停</h2><button class="btn" id="resumeBtn" style="width:auto;padding:10px 20px">继续</button></div></div>
+  <div class="side">
+    <div class="card"><span>SCORE</span><b id="score">0</b></div>
+    <div class="card"><span>LEVEL</span><b id="level">1</b></div>
+    <div class="card"><span>LINES</span><b id="lines">0</b></div>
+    <div class="card"><span>NEXT</span><canvas id="next" width="120" height="90"></canvas></div>
+    <button class="btn" id="pauseBtn">暂停</button>
+    <button class="btn" id="newBtn" style="background:#334155;color:#e2e8f0">新游戏</button>
+  </div>
+</div>
+<div class="help"><kbd>←</kbd><kbd>→</kbd> 左右 · <kbd>↑</kbd> 旋转 · <kbd>↓</kbd> 加速下落 · <kbd>空格</kbd> 直接落下</div>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d'),NEXT=document.getElementById('next').getContext('2d');
+const COL=10,ROW=20,S=30,scoreEl=document.getElementById('score'),levelEl=document.getElementById('level'),linesEl=document.getElementById('lines');
+const SHAPES=[
+  [[1,1,1,1]],[[1,1],[1,1]],[[0,1,0],[1,1,1]],[[1,0,0],[1,1,1]],[[0,0,1],[1,1,1]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]]
+];
+const COLORS=['#22d3ee','#facc15','#c084fc','#fb923c','#60a5fa','#4ade80','#f87171'];
+let board,cur,nextIdx,bag=[],score=0,lines=0,level=1,dropTimer,dropMs=700,paused=false,over=false;
+function refill(){bag=[0,1,2,3,4,5,6];for(let i=bag.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[bag[i],bag[j]]=[bag[j],bag[i]]}}
+function take(){if(!bag.length)refill();return bag.pop()}
+function rotate(m){const r=m.length,c=m[0].length,n=[];for(let j=0;j<c;j++){n.push([]);for(let i=0;i<r;i++)n[j].push(m[r-1-i][j])}return n}
+function spawn(){const idx=nextIdx!==undefined?nextIdx:take();nextIdx=take();const m=SHAPES[idx].map(r=>r.slice());cur={m,color:COLORS[idx],x:Math.floor((COL-m[0].length)/2),y:0};drawNext();if(collide(cur.m,cur.x,cur.y))gameOver()}
+function collide(m,px,py){for(let r=0;r<m.length;r++)for(let c=0;c<m[r].length;c++){if(m[r][c]){const x=px+c,y=py+r;if(x<0||x>=COL||y>=ROW||(y>=0&&board[y][x]))return true}}return false}
+function merge(){for(let r=0;r<cur.m.length;r++)for(let c=0;c<cur.m[r].length;c++){if(cur.m[r][c]){const y=cur.y+r;if(y>=0)board[y][cur.x+c]=cur.color}}}
+function clearLines(){let n=0;for(let r=ROW-1;r>=0;r--){if(board[r].every(v=>v)){board.splice(r,1);board.unshift(Array(COL).fill(null));n++}}if(n){lines+=n;score+=[0,100,300,500,800][n]*level;level=Math.floor(lines/10)+1;dropMs=Math.max(100,700-(level-1)*60);updateHud();restartTimer()}}
+function updateHud(){scoreEl.textContent=score;levelEl.textContent=level;linesEl.textContent=lines}
+function fix(){merge();clearLines();spawn()}
+function step(){if(paused||over)return;if(!collide(cur.m,cur.x,cur.y+1))cur.y++;else fix();draw()}
+function hardDrop(){if(paused||over)return;while(!collide(cur.m,cur.x,cur.y+1))cur.y++;fix();draw()}
+function moveLeft(){if(!paused&&!over&&!collide(cur.m,cur.x-1,cur.y)){cur.x--;draw()}}
+function moveRight(){if(!paused&&!over&&!collide(cur.m,cur.x+1,cur.y)){cur.x++;draw()}}
+function rot(){if(paused||over)return;const nm=rotate(cur.m);if(!collide(nm,cur.x,cur.y)){cur.m=nm;draw()}}
+function drawCell(c,x,y,size){c.fillStyle='#1e293b';c.fillRect(x*size,y*size,size,size);c.strokeStyle='#243247';c.strokeRect(x*size+.5,y*size+.5,size-1,size-1)}
+function draw(){
+  ctx.fillStyle='#0b1120';ctx.fillRect(0,0,cv.width,cv.height);
+  for(let r=0;r<ROW;r++)for(let c=0;c<COL;c++){drawCell(ctx,c,r,S);if(board[r][c]){ctx.fillStyle=board[r][c];ctx.fillRect(c*S+1,r*S+1,S-2,S-2)}}
+  for(let r=0;r<cur.m.length;r++)for(let c=0;c<cur.m[r].length;c++){if(cur.m[r][c]){ctx.fillStyle=cur.color;ctx.fillRect((cur.x+c)*S+1,(cur.y+r)*S+1,S-2,S-2)}}
+}
+function drawNext(){
+  NEXT.fillStyle='#0b1120';NEXT.fillRect(0,0,120,90);
+  const m=SHAPES[nextIdx],size=20,ox=(120-m[0].length*size)/2,oy=(90-m.length*size)/2;
+  for(let r=0;r<m.length;r++)for(let c=0;c<m[r].length;c++){if(m[r][c]){NEXT.fillStyle=COLORS[nextIdx];NEXT.fillRect(ox+c*size+1,oy+r*size+1,size-2,size-2)}}
+}
+function restartTimer(){clearInterval(dropTimer);dropTimer=setInterval(step,dropMs)}
+function gameOver(){over=true;clearInterval(dropTimer);ctx.fillStyle='rgba(11,17,32,.85)';ctx.fillRect(0,0,cv.width,cv.height);ctx.fillStyle='#e2e8f0';ctx.font='bold 30px Inter';ctx.textAlign='center';ctx.fillText('GAME OVER',cv.width/2,cv.height/2);ctx.font='16px Inter';ctx.fillText('得分 '+score+' · 点击「新游戏」重来',cv.width/2,cv.height/2+34)}
+function reset(){board=Array.from({length:ROW},()=>Array(COL).fill(null));score=0;lines=0;level=1;dropMs=700;over=false;paused=false;bag=[];nextIdx=undefined;document.getElementById('pause').style.display='none';updateHud();spawn();draw();restartTimer()}
+addEventListener('keydown',e=>{
+  if(e.code==='ArrowLeft'){e.preventDefault();moveLeft()}
+  if(e.code==='ArrowRight'){e.preventDefault();moveRight()}
+  if(e.code==='ArrowUp'){e.preventDefault();rot()}
+  if(e.code==='ArrowDown'){e.preventDefault();step()}
+  if(e.code==='Space'){e.preventDefault();hardDrop()}
+});
+document.getElementById('pauseBtn').onclick=()=>{if(over)return;paused=!paused;document.getElementById('pause').style.display=paused?'flex':'none';if(paused)clearInterval(dropTimer);else restartTimer()};
+document.getElementById('resumeBtn').onclick=()=>{paused=false;document.getElementById('pause').style.display='none';restartTimer()};
+document.getElementById('newBtn').onclick=reset;
+reset();
+</script>
+</body>
+</html>

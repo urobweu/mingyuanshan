@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数独 — 明园山工作室</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#e2e8f0;--sub:#94a3b8;--accent:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC",sans-serif;min-height:100vh;padding:18px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.topbar{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px}
+.topbar a{color:var(--sub);text-decoration:none;border:1px solid var(--line);padding:7px 13px;border-radius:4px}
+.topbar a:hover{color:var(--accent);border-color:var(--accent)}
+.topbar span{color:#64748b;letter-spacing:.1em}
+.hud{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px}
+.levels{display:flex;gap:8px}
+.levels button{background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:7px 12px;font-size:13px;cursor:pointer}
+.levels button.on{background:var(--accent);color:#052e16;border-color:var(--accent);font-weight:700}
+.stats{display:flex;gap:16px;font-size:14px}.stats b{color:var(--accent);font-variant-numeric:tabular-nums}
+.board{display:grid;grid-template-columns:repeat(9,1fr);width:min(520px,calc(100vw - 32px));aspect-ratio:1;border:2px solid #64748b;background:#0b1120}
+.cell{border:1px solid #243247;display:flex;align-items:center;justify-content:center;font-size:clamp(16px,4.5vw,26px);cursor:pointer;user-select:none;color:#93c5fd}
+.cell.given{color:var(--text);font-weight:700;background:#16233a}
+.cell.sel{background:#1e3a5f;outline:2px solid var(--accent);outline-offset:-2px}
+.cell.peer{background:#15243d}
+.cell.same{background:#1b4d3e}
+.cell.err{color:#f87171}
+.cell.b3{border-right:2px solid #64748b}.cell.b9{border-bottom:2px solid #64748b}
+.bar{width:min(520px,calc(100vw - 32px));display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+.bar button,.bar .num{background:var(--panel);color:var(--text);border:1px solid var(--line);border-radius:4px;padding:9px 0;font-size:14px;cursor:pointer;flex:1}
+.bar .num{min-width:0}
+.bar button:hover,.bar .num:hover{border-color:var(--accent)}
+.bar .action{background:var(--accent);color:#052e16;font-weight:700;border-color:var(--accent)}
+.msg{font-size:13px;color:var(--sub);margin-top:12px;min-height:20px}
+</style>
+</head>
+<body>
+<div class="topbar"><a href="mini-games.html">← 返回成熟小游戏</a><span>MINGYUANSHAN / SUDOKU</span></div>
+<div class="hud">
+  <div class="levels"><button data-lv="0" class="on">简单</button><button data-lv="1">中等</button><button data-lv="2">困难</button><button data-lv="3">专家</button><button data-lv="4">极限</button></div>
+  <div class="stats"><span>用时 <b id="time">0</b>s</span></div>
+</div>
+<div class="board" id="board"></div>
+<div class="bar" id="nums"></div>
+<div class="bar">
+  <button class="action" id="checkBtn">检查</button>
+  <button id="eraseBtn">擦除</button>
+  <button id="hintBtn">提示</button>
+  <button id="newBtn">新题</button>
+</div>
+<div class="msg" id="msg">选择一个格子，再点数字填入。</div>
+<script>
+const boardEl=document.getElementById('board'),numsEl=document.getElementById('nums'),msgEl=document.getElementById('msg'),timeEl=document.getElementById('time');
+const BASE=[
+  [5,3,4,6,7,8,9,1,2],[6,7,2,1,9,5,3,4,8],[1,9,8,3,4,2,5,6,7],
+  [8,5,9,7,6,1,4,2,3],[4,2,6,8,5,3,7,9,1],[7,1,3,9,2,4,8,5,6],
+  [9,6,1,5,3,7,2,8,4],[2,8,7,4,1,9,6,3,5],[3,4,5,2,8,6,1,7,9]
+];
+let lv=0,board,given,solution,sel=-1,timer,tSec;
+const cells=[];
+function shuffleSol(){
+  const perm=[1,2,3,4,5,6,7,8,9];
+  for(let i=8;i>0;i--){const j=Math.floor(Math.random()*(i+1));[perm[i],perm[j]]=[perm[j],perm[i]]}
+  return BASE.map(r=>r.map(v=>perm[v-1]));
+}
+function valid(sol){return sol}
+function generate(){
+  solution=shuffleSol();
+  board=solution.map(r=>r.slice());
+  const holes=[40,50,60,62,66][lv];
+  const positions=[];for(let i=0;i<81;i++)positions.push(i);
+  for(let i=80;i>0;i--){const j=Math.floor(Math.random()*(i+1));[positions[i],positions[j]]=[positions[j],positions[i]]}
+  positions.slice(0,holes).forEach(i=>board[Math.floor(i/9)][i%9]=0);
+  given=board.map(r=>r.slice());
+}
+function build(){
+  boardEl.innerHTML='';cells.length=0;
+  for(let i=0;i<81;i++){
+    const d=document.createElement('div');d.className='cell';
+    if(i%9===2||i%9===5)d.classList.add('b3');
+    if(Math.floor(i/9)===2||Math.floor(i/9)===5)d.classList.add('b9');
+    d.onclick=()=>select(i);boardEl.appendChild(d);cells.push(d);
+  }
+  numsEl.innerHTML='';
+  for(let n=1;n<=9;n++){const b=document.createElement('button');b.className='num';b.textContent=n;b.onclick=()=>fill(n);numsEl.appendChild(b)}
+}
+function render(){
+  for(let i=0;i<81;i++){
+    const r=Math.floor(i/9),c=i%9,v=board[r][c],d=cells[i];
+    d.textContent=v||'';
+    d.className='cell'+((i%9===2||i%9===5)?' b3':'')+((r===2||r===5)?' b9':'')+(given[r][c]?' given':'')+(sel===i?' sel':'');
+    if(sel>=0){
+      const sr=Math.floor(sel/9),sc=sel%9;
+      if(r===sr||c===sc)d.classList.add('peer');
+      if(v&&v===board[sr][sc]&&!given[r][c])d.classList.add('same');
+    }
+  }
+}
+function select(i){if(given[Math.floor(i/9)][i%9])return;sel=i;render()}
+function fill(n){
+  if(sel<0){msgEl.textContent='请先选择一个格子。';return}
+  const r=Math.floor(sel/9),c=sel%9;
+  if(given[r][c])return;
+  board[r][c]=n;msgEl.textContent='';render();
+}
+function check(){
+  let err=0;
+  for(let i=0;i<81;i++){
+    const r=Math.floor(i/9),c=i%9,v=board[r][c];
+    if(v&&v!==solution[r][c]){cells[i].classList.add('err');err++}
+  }
+  msgEl.textContent=err?('有 '+err+' 个格子填错了。'):(board.every((row,r)=>row.every((v,c)=>v===solution[r][c]))?'全部正确，完成！':'目前没有错误，继续填。');
+  if(!err&&board.every((row,r)=>row.every((v,c)=>v===solution[r][c]))){clearInterval(timer);msgEl.textContent='完成！用时 '+tSec+' 秒。'}
+}
+function hint(){
+  if(sel<0){msgEl.textContent='请选择一个格子。';return}
+  const r=Math.floor(sel/9),c=sel%9;
+  board[r][c]=solution[r][c];given[r][c]=1;render();msgEl.textContent='已填入正确数字。';
+  if(board.every((row,ri)=>row.every((v,ci)=>v===solution[ri][ci]))){clearInterval(timer);msgEl.textContent='完成！用时 '+tSec+' 秒。'}
+}
+function resetTimer(){clearInterval(timer);tSec=0;timeEl.textContent='0';timer=setInterval(()=>{tSec++;timeEl.textContent=tSec},1000)}
+function newGame(){generate();sel=-1;msgEl.textContent='选择一个格子，再点数字填入。';render();resetTimer()}
+document.getElementById('checkBtn').onclick=check;
+document.getElementById('hintBtn').onclick=hint;
+document.getElementById('eraseBtn').onclick=()=>{if(sel<0)return;const r=Math.floor(sel/9),c=sel%9;if(given[r][c])return;board[r][c]=0;render()};
+document.getElementById('newBtn').onclick=newGame;
+document.querySelectorAll('.levels button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.levels button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');lv=+b.dataset.lv;newGame();
+});
+build();newGame();
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>方块跑酷 — 明园山工作室</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1016;--panel:#141e2a;--line:#273648;--text:#e8eef5;--muted:#8ca0b4;--accent:#3ddc97;--amber:#f2b544;--mono:"JetBrains Mono",Consolas,monospace}
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;display:flex;flex-direction:column;align-items:center;padding:28px 20px 40px}
+a{color:inherit;text-decoration:none}
+.top{width:min(900px,100%);display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
+.back{font-family:var(--mono);font-size:12px;color:var(--muted);border:1px solid var(--line);padding:8px 12px;border-radius:5px;transition:.2s}
+.back:hover{color:var(--accent);border-color:var(--accent)}
+.title{font-family:var(--mono);font-size:11px;letter-spacing:.16em;color:var(--dim);color:var(--muted)}
+.wrap{width:min(900px,100%)}
+.hud{display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.hud div{flex:1;min-width:120px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 14px}
+.hud span{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--muted);display:block}
+.hud strong{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text)}
+.hud .hi strong{color:var(--accent)}
+.stage{position:relative;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#0d141d;box-shadow:0 24px 60px rgba(0,0,0,.4)}
+canvas{display:block;width:100%;height:auto;touch-action:none}
+.overlay{position:absolute;inset:0;background:rgba(8,13,19,.86);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:14px;backdrop-filter:blur(3px)}
+.overlay.hidden{display:none}
+.overlay .tag{font-family:var(--mono);font-size:11px;letter-spacing:.2em;color:var(--accent)}
+.overlay h1{font-size:clamp(28px,5vw,44px);font-weight:800;letter-spacing:-.04em}
+.overlay p{color:var(--muted);font-size:14px;max-width:420px}
+.btn{font-family:var(--mono);font-size:13px;font-weight:700;background:var(--accent);color:#07130d;border:0;border-radius:5px;padding:13px 28px;cursor:pointer;transition:filter .2s,transform .2s}
+.btn:hover{filter:brightness(1.12);transform:translateY(-2px)}
+.help{margin-top:14px;font-family:var(--mono);font-size:11px;color:var(--muted);line-height:2}
+.help b{color:var(--amber)}
+kbd{font-family:var(--mono);font-size:11px;border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:2px 7px;color:var(--text);background:var(--panel)}
+</style>
+</head>
+<body>
+<div class="top"><a class="back" href="mini-games.html">← 返回小游戏列表</a><span class="title">GAME / 001 — BLOCK PARKOUR</span></div>
+<div class="wrap">
+  <div class="hud">
+    <div><span>SCORE</span><strong id="score">0</strong></div>
+    <div class="hi"><span>BEST</span><strong id="best">0</strong></div>
+    <div><span>SPEED</span><strong id="speed">1.0</strong></div>
+  </div>
+  <div class="stage">
+    <canvas id="game" width="900" height="460"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="tag">READY / 001</div>
+      <h1 id="ovTitle">方块跑酷</h1>
+      <p id="ovText">跨过断层，别掉下去。速度会随着距离慢慢提升。</p>
+      <button class="btn" id="startBtn">开始游戏 [ ENTER ]</button>
+    </div>
+  </div>
+  <div class="help"><b>操作：</b><kbd>空格</kbd> / <kbd>↑</kbd> / 点击画面 跳跃　·　落地后才能再次起跳</div>
+</div>
+<script>
+const cvs=document.getElementById('game'),ctx=cvs.getContext('2d'),W=cvs.width,H=cvs.height;
+const overlay=document.getElementById('overlay'),ovTitle=document.getElementById('ovTitle'),ovText=document.getElementById('ovText'),startBtn=document.getElementById('startBtn');
+const elScore=document.getElementById('score'),elBest=document.getElementById('best'),elSpeed=document.getElementById('speed');
+function getBest(k){try{return +(localStorage.getItem(k)||0)||0}catch(e){return 0}}
+function setBest(k,v){try{localStorage.setItem(k,v)}catch(e){}}
+const GY=352,GRAV=.62,JUMP=-13.6;
+let state='ready',segs=[],player,score=0,speed=3.2,frame=0,best=getBest('mys_parkour_best');
+elBest.textContent=best;
+function reset(){
+  segs=[{x:0,w:720}];
+  player={x:130,y:GY-30,w:30,h:30,vy:0,onGround:true};
+  score=0;speed=3.2;frame=0;state='playing';
+  overlay.classList.add('hidden');updateHud();
+  startBtn.blur();
+}
+function spawn(){const last=segs[segs.length-1];segs.push({x:last.x+last.w+95+Math.random()*75,w:175+Math.random()*155})}
+function jump(){if(state==='playing'&&player.onGround){player.vy=JUMP;player.onGround=false}}
+function over(){
+  state='over';
+  if(score>best){best=score;setBest('mys_parkour_best',Math.floor(best))}
+  ovTitle.textContent='本局结束';
+  ovText.textContent='得分 '+Math.floor(score)+' · 距离 '+Math.floor(score/3)+' m · 最高 '+Math.floor(best);
+  startBtn.textContent='再来一次 [ ENTER ]';overlay.classList.remove('hidden');updateHud();
+}
+function update(){
+  frame++;speed=Math.min(speed+.0009,7.4);score+=speed*.11;
+  segs.forEach(s=>s.x-=speed);
+  while(segs[segs.length-1].x+segs[segs.length-1].w<W+260)spawn();
+  segs=segs.filter(s=>s.x+s.w>-20);
+  const prevFoot=player.y+player.h;
+  if(!player.onGround){player.vy+=GRAV;player.y+=player.vy}
+  const foot=player.y+player.h;
+  let landed=false;
+  // 仅当脚部本帧从地面线之上穿到之下，且水平位置在平台范围内时才算落地
+  if(player.vy>=0&&prevFoot<=GY&&foot>=GY){
+    for(const s of segs){
+      if(player.x+player.w>s.x+2&&player.x<s.x+s.w-2){landed=true;break}
+    }
+  }
+  if(landed){player.y=GY-player.h;player.vy=0;player.onGround=true}
+  else player.onGround=false;
+  if(player.y>H+40)over();
+  updateHud();
+}
+function updateHud(){elScore.textContent=Math.floor(score);elBest.textContent=Math.floor(best);elSpeed.textContent=(speed/3.2).toFixed(1)}
+function draw(){
+  ctx.fillStyle='#0d141d';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(39,54,72,.55)';ctx.lineWidth=1;
+  for(let x=0;x<W;x+=45){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
+  for(let y=0;y<H;y+=45){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
+  ctx.fillStyle='rgba(140,160,180,.35)';
+  for(let i=0;i<26;i++){const sx=(i*137)%W,sy=30+(i*79)%240;ctx.fillRect(sx,sy,2,2)}
+  for(const s of segs){
+    const x=Math.max(-5,s.x),right=Math.min(s.x+s.w,W+5),w=right-x;
+    if(w<=0)continue;
+    ctx.fillStyle='#1a2634';ctx.fillRect(x,GY,w,H-GY);
+    ctx.fillStyle='#3ddc97';ctx.fillRect(x,GY-3,w,3);
+    ctx.strokeStyle='rgba(61,220,151,.12)';
+    for(let gx=Math.ceil(x/28)*28;gx<x+w;gx+=28){ctx.beginPath();ctx.moveTo(gx,GY);ctx.lineTo(gx,H);ctx.stroke()}
+  }
+  ctx.fillStyle='#f2b544';ctx.fillRect(player.x,player.y,player.w,player.h);
+  ctx.fillStyle='rgba(255,255,255,.35)';ctx.fillRect(player.x+5,player.y+5,player.w-10,5);
+  ctx.fillStyle='rgba(242,181,68,.18)';ctx.fillRect(player.x-4,player.y+player.h,player.w+8,4);
+  ctx.font='600 13px "JetBrains Mono",monospace';ctx.fillStyle='rgba(232,238,245,.55)';
+  ctx.fillText('DIST '+Math.floor(score/3)+'m',18,30);
+}
+function loop(){if(state==='playing')update();draw();requestAnimationFrame(loop)}
+addEventListener('keydown',e=>{
+  if(['Space','ArrowUp','KeyW','Enter'].includes(e.code)){
+    e.preventDefault();
+    if(state==='playing')jump();else if(e.code==='Enter')reset();
+  }
+});
+cvs.addEventListener('pointerdown',e=>{e.preventDefault();if(state==='playing')jump()});
+startBtn.addEventListener('click',reset);
+segs=[{x:0,w:720}];player={x:130,y:GY-30,w:30,h:30,vy:0,onGround:true};
+loop();
+</script>
+</body>
+</html>

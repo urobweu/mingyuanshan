@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>五子棋 — 明园山工作室</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#e2e8f0;--sub:#94a3b8;--accent:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC",sans-serif;min-height:100vh;padding:18px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.topbar{width:100%;max-width:620px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px}
+.topbar a{color:var(--sub);text-decoration:none;border:1px solid var(--line);padding:7px 13px;border-radius:4px}
+.topbar a:hover{color:var(--accent);border-color:var(--accent)}
+.topbar span{color:#64748b;letter-spacing:.1em}
+.wrap{display:flex;gap:22px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+canvas{border:2px solid #b45309;background:#dcb35c;border-radius:4px;max-width:calc(100vw - 32px);cursor:crosshair}
+.side{min-width:170px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px}
+.card span{display:block;font-size:10px;letter-spacing:.12em;color:var(--sub);margin-bottom:6px}
+.card b{font-size:18px}
+.btn{background:var(--accent);color:#052e16;border:0;border-radius:5px;padding:11px;font-size:14px;font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(1.12)}
+.btn.alt{background:#334155;color:var(--text)}
+.help{font-size:12px;color:var(--sub);margin-top:16px;text-align:center;line-height:1.9;max-width:620px}
+</style>
+</head>
+<body>
+<div class="topbar"><a href="mini-games.html">← 返回成熟小游戏</a><span>MINGYUANSHAN / GOMOKU</span></div>
+<div class="wrap">
+  <canvas id="cv" width="570" height="570"></canvas>
+  <div class="side">
+    <div class="card"><span>状态</span><b id="status">轮到你（黑棋）</b></div>
+    <div class="card"><span>胜负</span><b id="result">进行中</b></div>
+    <button class="btn alt" id="undoBtn">悔棋</button>
+    <button class="btn" id="newBtn">新对局</button>
+  </div>
+</div>
+<div class="help">你执黑棋先手，点击交叉点落子，电脑执白棋应对。先连成五子者获胜。</div>
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const N=15,PAD=25,CELL=(cv.width-PAD*2)/(N-1);
+const statusEl=document.getElementById('status'),resultEl=document.getElementById('result');
+let board,history,turn,over,winner;
+function init(){board=Array.from({length:N},()=>Array(N).fill(0));history=[];turn=1;over=false;winner=0;statusEl.textContent='轮到你（黑棋）';resultEl.textContent='进行中';draw()}
+function draw(){
+  ctx.fillStyle='#dcb35c';ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.strokeStyle='#7c5315';ctx.lineWidth=1;
+  for(let i=0;i<N;i++){
+    ctx.beginPath();ctx.moveTo(PAD,PAD+i*CELL);ctx.lineTo(PAD+(N-1)*CELL,PAD+i*CELL);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(PAD+i*CELL,PAD);ctx.lineTo(PAD+i*CELL,PAD+(N-1)*CELL);ctx.stroke();
+  }
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(board[r][c]){
+      const x=PAD+c*CELL,y=PAD+r*CELL;
+      ctx.beginPath();ctx.arc(x,y,CELL*.42,0,Math.PI*2);
+      ctx.fillStyle=board[r][c]===1?'#111827':'#f8fafc';ctx.fill();
+      ctx.strokeStyle='#374151';ctx.lineWidth=.6;ctx.stroke();
+    }
+  }
+  if(winner){
+    const {r,c,v}=winner;const x=PAD+c*CELL,y=PAD+r*CELL;
+    ctx.beginPath();ctx.arc(x,y,CELL*.5,0,Math.PI*2);ctx.strokeStyle='#dc2626';ctx.lineWidth=3;ctx.stroke();
+  }
+}
+function check(r,c,v){
+  const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(const [dr,dc] of dirs){
+    let count=1,cells=[[r,c]];
+    for(const s of [1,-1]){
+      let rr=r+dr*s,cc=c+dc*s;
+      while(rr>=0&&rr<N&&cc>=0&&cc<N&&board[rr][cc]===v){count++;cells.push([rr,cc]);rr+=dr*s;cc+=dc*s}
+    }
+    if(count>=5)return cells;
+  }
+  return null;
+}
+function scorePoint(r,c,v){
+  if(board[r][c])return 0;
+  let s=0;const dirs=[[0,1],[1,0],[1,1],[1,-1]];
+  for(const [dr,dc] of dirs){
+    let cnt=1,open=0;
+    for(const sign of [1,-1]){
+      let rr=r+dr*sign,cc=c+dc*sign,n=0;
+      while(rr>=0&&rr<N&&cc>=0&&cc<N&&board[rr][cc]===v){n++;rr+=dr*sign;cc+=dc*sign}
+      cnt+=n;
+      if(rr>=0&&rr<N&&cc>=0&&cc<N&&board[rr][cc]===0)open++;
+    }
+    if(cnt>=5)s+=100000;
+    else if(open===2)s+=[0,10,100,1000,10000][cnt]||0;
+    else if(open===1)s+=[0,5,40,300,2000][cnt]||0;
+  }
+  return s;
+}
+function aiMove(){
+  let best=null,bestScore=-1;
+  for(let r=0;r<N;r++)for(let c=0;c<N;c++){
+    if(board[r][c])continue;
+    const atk=scorePoint(r,c,2),def=scorePoint(r,c,1);
+    const s=Math.max(atk,def*0.9)+Math.random();
+    if(s>bestScore){bestScore=s;best={r,c}}
+  }
+  if(best){place(best.r,best.c,2)}
+}
+function place(r,c,v){
+  board[r][c]=v;history.push({r,c,v});
+  const line=check(r,c,v);
+  if(line){winner={r,c,v};over=true;resultEl.textContent=v===1?'你赢了！':'电脑获胜';statusEl.textContent='对局结束';draw();return}
+  turn=v===1?2:1;
+  statusEl.textContent=turn===1?'轮到你（黑棋）':'电脑思考中…';draw();
+  if(turn===2&&!over)setTimeout(aiMove,250);
+}
+cv.addEventListener('click',e=>{
+  if(over||turn!==1)return;
+  const rect=cv.getBoundingClientRect(),sx=cv.width/rect.width,sy=cv.height/rect.height;
+  const x=(e.clientX-rect.left)*sx,y=(e.clientY-rect.top)*sy;
+  const c=Math.round((x-PAD)/CELL),r=Math.round((y-PAD)/CELL);
+  if(r<0||r>=N||c<0||c>=N||board[r][c])return;
+  place(r,c,1);
+});
+document.getElementById('undoBtn').onclick=()=>{
+  if(!history.length)return;
+  if(turn===1&&history.length>=2){history.pop();history.pop()}
+  else if(history.length)history.pop();
+  board=Array.from({length:N},()=>Array(N).fill(0));
+  history.forEach(h=>board[h.r][h.c]=h.v);
+  over=false;winner=0;turn=1;resultEl.textContent='进行中';statusEl.textContent='轮到你（黑棋）';draw();
+};
+document.getElementById('newBtn').onclick=init;
+init();
+</script>
+</body>
+</html>

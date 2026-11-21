@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>明园山工作室</title>
+<meta name="description" content="明园山工作室 — 网页小游戏与 Minecraft 服务器。">
+<style>
+:root{
+  --paper:#f5f3ee;--ink:#1c1b19;--sub:#6e6a62;--line:#d8d3c8;
+  --accent:#9c3b2c;--wash:#ece8df;
+  --serif:"Iowan Old Style","Palatino Linotype","Songti SC","STSong",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font-family:inherit}
+.wrap{width:min(1080px,calc(100% - 48px));margin:0 auto}
+.site-header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;background:rgba(245,243,238,.94);backdrop-filter:blur(8px)}
+.header-inner{display:flex;justify-content:space-between;align-items:center;height:68px}
+.logo{font-family:var(--serif);font-size:19px;font-weight:600;letter-spacing:.02em}
+.site-nav{display:flex;gap:34px;font-size:14px;color:var(--sub)}
+.site-nav a{padding:4px 0;position:relative;transition:color .2s}
+.site-nav a:hover{color:var(--ink)}
+.site-nav a::after{content:"";position:absolute;left:0;bottom:-2px;height:1px;width:0;background:var(--accent);transition:width .25s}
+.site-nav a:hover::after{width:100%}
+.menu-btn{display:none;background:none;border:1px solid var(--line);padding:6px 10px;border-radius:2px;cursor:pointer;color:var(--ink)}
+
+.hero{display:grid;grid-template-columns:1.1fr .9fr;gap:72px;align-items:center;padding:96px 0 104px}
+.kicker{font-size:11px;letter-spacing:.18em;color:var(--sub);margin:0 0 22px}
+h1{font-family:var(--serif);font-size:clamp(48px,7vw,76px);line-height:1.08;letter-spacing:-.02em;font-weight:600;margin:0 0 24px}
+.lede{font-size:17px;color:var(--sub);max-width:460px;margin:0 0 34px}
+.actions{display:flex;gap:12px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;font-size:14px;padding:12px 22px;border-radius:2px;border:1px solid var(--ink);transition:background .2s,color .2s,border-color .2s}
+.btn.solid{background:var(--ink);color:var(--paper)}
+.btn.solid:hover{background:var(--accent);border-color:var(--accent)}
+.btn.line:hover{border-color:var(--accent);color:var(--accent)}
+
+.poster{position:relative;aspect-ratio:4/5;background:var(--wash);border:1px solid var(--line);overflow:hidden}
+.poster-no{position:absolute;top:20px;left:20px;font-size:10px;letter-spacing:.16em;color:var(--sub)}
+.poster-word{position:absolute;left:22px;bottom:52px;font-family:var(--serif);font-size:clamp(38px,5vw,64px);line-height:.96;letter-spacing:-.02em;color:var(--ink)}
+.poster-foot{position:absolute;left:22px;bottom:20px;font-size:10px;letter-spacing:.12em;color:var(--sub)}
+.poster-circle{position:absolute;right:-42px;top:12%;width:230px;height:230px;border:1px solid var(--accent);border-radius:50%}
+.poster-bar{position:absolute;right:34px;top:0;width:64px;height:100%;background:repeating-linear-gradient(180deg,var(--ink) 0 2px,transparent 2px 16px);opacity:.18}
+.poster-block{position:absolute;right:62px;top:30%;width:52px;height:52px;background:var(--accent);transform:rotate(12deg)}
+
+.section{border-top:1px solid var(--line);padding:84px 0}
+.section-head{display:grid;grid-template-columns:200px 1fr;gap:40px;margin-bottom:46px}
+.section-head h2{font-family:var(--serif);font-size:34px;font-weight:600;margin:0;letter-spacing:-.01em}
+.section-head .meta{font-size:11px;letter-spacing:.14em;color:var(--sub);padding-top:8px}
+.section-body{grid-column:2}
+.prose{max-width:640px;font-size:16px;color:var(--sub)}
+.prose strong{color:var(--ink);font-weight:600}
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:36px;border-top:1px solid var(--line);padding-top:22px}
+.facts div span{display:block;font-size:11px;letter-spacing:.1em;color:var(--sub);margin-bottom:6px}
+.facts div strong{font-family:var(--serif);font-size:21px;font-weight:600}
+
+.entry{display:grid;grid-template-columns:190px 1fr auto;gap:32px;align-items:center;border-top:1px solid var(--line);padding:30px 0;transition:padding-left .25s}
+.entry:last-child{border-bottom:1px solid var(--line)}
+.entry:hover{padding-left:10px}
+.thumb{aspect-ratio:16/10;background:var(--wash);border:1px solid var(--line);position:relative;overflow:hidden}
+.thumb.mini{background:#e7e9e4}
+.thumb.big{background:#e9e3d9}
+.thumb::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 22px,rgba(28,27,25,.055) 22px 23px)}
+.thumb .mark{position:absolute;left:16px;bottom:12px;font-family:var(--serif);font-size:26px;color:var(--ink)}
+.thumb.big .mark{color:var(--accent)}
+.entry h3{font-family:var(--serif);font-size:26px;font-weight:600;margin:0 0 8px}
+.entry p{font-size:14px;color:var(--sub);margin:0;max-width:520px}
+.entry .arrow{font-size:22px;color:var(--sub);transition:transform .25s,color .25s}
+.entry:hover .arrow{transform:translateX(6px);color:var(--accent)}
+
+.srv{display:grid;grid-template-columns:1fr 1fr;gap:56px}
+.srv-item{border-top:2px solid var(--ink);padding-top:20px}
+.srv-item.alt{border-top-color:var(--accent)}
+.srv-item h3{font-family:var(--serif);font-size:24px;font-weight:600;margin:0 0 10px}
+.srv-item p{font-size:14px;color:var(--sub);margin:0 0 20px;min-height:64px}
+.srv-meta{font-size:12px;color:var(--sub);margin-bottom:16px}
+.ip{display:flex;align-items:center;gap:10px;border:1px solid var(--line);padding:10px 12px;background:var(--paper)}
+.ip code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px;flex:1;overflow-x:auto;white-space:nowrap}
+.copy{border:1px solid var(--ink);background:none;color:var(--ink);font-size:12px;padding:7px 12px;border-radius:2px;cursor:pointer;white-space:nowrap}
+.copy:hover{background:var(--ink);color:var(--paper)}
+
+.contact{text-align:center}
+.contact h2{font-family:var(--serif);font-size:36px;font-weight:600;margin:0 0 14px}
+.contact p{color:var(--sub);margin:0 0 26px}
+footer{border-top:1px solid var(--line);padding:28px 0;font-size:12px;color:var(--sub)}
+.foot-inner{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,12px);background:var(--ink);color:var(--paper);padding:11px 18px;font-size:13px;border-radius:2px;opacity:0;pointer-events:none;transition:.25s;z-index:50}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:860px){
+  .hero{grid-template-columns:1fr;gap:44px;padding:64px 0 76px}
+  .poster{max-width:420px}
+  .section-head{grid-template-columns:1fr;gap:12px}
+  .section-body{grid-column:1}
+  .facts{grid-template-columns:1fr 1fr}
+  .srv{grid-template-columns:1fr;gap:40px}
+  .entry{grid-template-columns:120px 1fr;gap:20px}
+  .entry .arrow{display:none}
+}
+@media(max-width:560px){
+  .wrap{width:calc(100% - 36px)}
+  .site-nav{display:none;position:absolute;top:68px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--line);flex-direction:column;gap:0;padding:8px 18px 16px}
+  .site-nav.open{display:flex}
+  .site-nav a{padding:11px 2px;border-bottom:1px solid var(--line)}
+  .menu-btn{display:block}
+  .facts{grid-template-columns:1fr}
+  .entry{grid-template-columns:1fr;gap:14px}
+  .thumb{max-width:240px}
+}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="index.html">明园山工作室</a>
+    <nav class="site-nav" id="nav">
+      <a href="index.html">首页</a>
+      <a href="games.html">游戏</a>
+      <a href="#servers">服务器</a>
+      <a href="#contact">联系</a>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="菜单">菜单</button>
+  </div>
+</header>
+
+<main>
+  <section class="wrap hero">
+    <div>
+      <p class="kicker">MINGYUANSHAN STUDIO · EST. 2026</p>
+      <h1>明园山工作室</h1>
+      <p class="lede">做网页游戏，也运营两个 Minecraft 世界。作品不多，都在持续更新。</p>
+      <div class="actions">
+        <a class="btn solid" href="games.html">浏览游戏 <span>→</span></a>
+        <a class="btn line" href="#servers">服务器地址</a>
+      </div>
+    </div>
+    <div class="poster" aria-hidden="true">
+      <span class="poster-no">NO. 001 / SELECTED WORKS</span>
+      <span class="poster-circle"></span>
+      <span class="poster-bar"></span>
+      <span class="poster-block"></span>
+      <span class="poster-word">MING<br>YUAN<br>SHAN</span>
+      <span class="poster-foot">GAMES / SERVERS / WORLD BUILDING</span>
+    </div>
+  </section>
+
+  <section class="section" id="about">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="meta">01 — ABOUT</div>
+        <div class="section-body">
+          <h2>关于工作室</h2>
+          <p class="prose">明园山工作室是一个独立的小型项目，主要做两件事：开发<strong>打开浏览器就能玩的小游戏</strong>，以及维护两个主题不同的 <strong>Minecraft 服务器</strong>。没有宏大的计划，把每个小东西做扎实就好。</p>
+          <div class="facts">
+            <div><span>网页游戏</span><strong>3 款</strong></div>
+            <div><span>Minecraft 服务器</span><strong>2 个</strong></div>
+            <div><span>当前状态</span><strong>持续更新</strong></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="meta">02 — GAMES</div>
+        <div class="section-body">
+          <h2>游戏</h2>
+          <p class="prose">分成两类：可以直接在浏览器里玩的小游戏，以及需要下载安装的大游戏。</p>
+        </div>
+      </div>
+      <a class="entry" href="mini-games.html">
+        <div class="thumb mini"><span class="mark">01</span></div>
+        <div><h3>小游戏</h3><p>幼稚小游戏与成熟小游戏两类，共 15 款。打开网页就能玩，无需安装。</p></div>
+        <span class="arrow">→</span>
+      </a>
+      <a class="entry" href="big-games.html">
+        <div class="thumb big"><span class="mark">02</span></div>
+        <div><h3>大游戏</h3><p>明园山生存，以及番外篇「末日火车」。体量更大的企划，提供下载入口。</p></div>
+        <span class="arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+  <section class="section" id="servers">
+    <div class="wrap">
+      <div class="section-head">
+        <div class="meta">03 — SERVERS</div>
+        <div class="section-body">
+          <h2>服务器</h2>
+          <p class="prose">均为 Java 版。复制地址后，在多人游戏中添加即可。</p>
+        </div>
+      </div>
+      <div class="srv">
+        <div class="srv-item">
+          <h3>MTR 铁路 · 极致体验服</h3>
+          <p>基于 Minecraft Transit Railway 模组的轨道交通世界。线路规划、站台设计、信号调度与列车运行，追求接近真实的运营体验。</p>
+          <div class="srv-meta">JAVA 1.20.1 + MODS · 最大 80 人 · 创造模式</div>
+          <div class="ip"><code id="ipMtr">rail.mingyuanshan.top</code><button class="copy" data-target="ipMtr">复制</button></div>
+        </div>
+        <div class="srv-item alt">
+          <h3>明园山生存 · 普通生存图</h3>
+          <p>接近原版的生存世界。从第一棵树开始，合作盖房子、修农场、下矿探险，慢慢把这片地方建成城镇。</p>
+          <div class="srv-meta">JAVA 1.20+ · 最大 40 人 · 生存模式</div>
+          <div class="ip"><code id="ipSurv">survival.mingyuanshan.top</code><button class="copy" data-target="ipSurv">复制</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section contact" id="contact">
+    <div class="wrap">
+      <h2>联系</h2>
+      <p>发现 Bug、有玩法建议，或者想合作，欢迎来信。</p>
+      <a class="btn solid" href="mailto:hello@mingyuanshan.top">hello@mingyuanshan.top</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap foot-inner">
+    <span>明园山工作室</span>
+    <span>© 2026 MINGYUANSHAN STUDIO</span>
+  </div>
+</footer>
+<div class="toast" id="toast"></div>
+<script>
+const menuBtn=document.getElementById('menuBtn'),nav=document.getElementById('nav');
+menuBtn.addEventListener('click',()=>nav.classList.toggle('open'));
+nav.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>nav.classList.remove('open')));
+const toast=document.getElementById('toast');let tt;
+function showToast(m){toast.textContent=m;toast.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>toast.classList.remove('show'),2200)}
+document.querySelectorAll('.copy').forEach(b=>b.addEventListener('click',async()=>{
+  const ip=document.getElementById(b.dataset.target).textContent.trim();
+  try{await navigator.clipboard.writeText(ip);showToast('已复制：'+ip)}catch(e){showToast('请手动复制：'+ip)}
+}));
+</script>
+</body>
+</html>

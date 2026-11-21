@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>2048 — 明园山工作室</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#e2e8f0;--sub:#94a3b8;--accent:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;min-height:100vh;padding:18px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.topbar{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;font-size:13px}
+.topbar a{color:var(--sub);text-decoration:none;border:1px solid var(--line);padding:7px 13px;border-radius:4px}
+.topbar a:hover{color:var(--accent);border-color:var(--accent)}
+.topbar span{color:#64748b;letter-spacing:.1em}
+.hud{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px}
+.hud h1{font-size:30px;font-weight:800;letter-spacing:-.03em}
+.hud .scores{display:flex;gap:10px}
+.hud .scores div{background:var(--panel);border:1px solid var(--line);border-radius:5px;padding:6px 14px;text-align:center;min-width:78px}
+.hud .scores span{display:block;font-size:9px;letter-spacing:.12em;color:var(--sub)}
+.hud .scores b{font-size:19px;font-variant-numeric:tabular-nums}
+.bar{width:100%;max-width:520px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.bar p{font-size:13px;color:var(--sub)}
+.btn{background:var(--accent);color:#052e16;border:0;border-radius:5px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer}
+.btn:hover{filter:brightness(1.12)}
+.board{position:relative;width:100%;max-width:520px;aspect-ratio:1;background:#172033;border-radius:8px;padding:12px;display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(4,1fr);gap:12px}
+.cell,.tile{grid-area:1/1;border-radius:5px}
+.cell{background:#1e2b40}
+.tile{display:flex;align-items:center;justify-content:center;font-size:clamp(24px,7vw,42px);font-weight:800;color:#0f172a;transition:transform .12s;position:relative;z-index:2}
+.t2{background:#94a3b8}.t4{background:#cbd5e1}.t8{background:#5eead4}.t16{background:#4ade80}.t32{background:#a3e635}.t64{background:#facc15}.t128{background:#fb923c}.t256{background:#f87171}.t512{background:#e879f9}.t1024{background:#c084fc}.t2048{background:#f43f5e;color:#fff}
+.over{position:absolute;inset:0;background:rgba(15,23,42,.9);display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;border-radius:8px;z-index:5}
+.over.show{display:flex}.over h2{font-size:34px}.over p{color:var(--sub)}
+.help{max-width:520px;width:100%;margin-top:16px;font-size:12px;color:var(--sub);line-height:1.9;text-align:center}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:1px 7px;color:var(--text)}
+</style>
+</head>
+<body>
+<div class="topbar"><a href="mini-games.html">← 返回成熟小游戏</a><span>MINGYUANSHAN / 2048</span></div>
+<div class="hud"><h1>2048</h1><div class="scores"><div><span>SCORE</span><b id="score">0</b></div><div><span>BEST</span><b id="best">0</b></div></div></div>
+<div class="bar"><p>合并相同数字，凑出 2048。</p><button class="btn" id="newBtn">新游戏</button></div>
+<div class="board" id="board">
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+  <div class="cell"></div><div class="cell"></div><div class="cell"></div><div class="cell"></div>
+  <div class="over" id="over"><h2 id="overTitle">游戏结束</h2><p id="overText"></p><button class="btn" id="againBtn">再来一局</button></div>
+</div>
+<div class="help"><kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 或 <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> 移动方块 · 手机可滑动</div>
+<script>
+const board=document.getElementById('board'),scoreEl=document.getElementById('score'),bestEl=document.getElementById('best'),over=document.getElementById('over');
+function getBest(){try{return +(localStorage.getItem('mys_2048_best')||0)||0}catch(e){return 0}}
+function setBest(v){try{localStorage.setItem('mys_2048_best',v)}catch(e){}}
+let grid,score,best=getBest();
+bestEl.textContent=best;
+const tiles=[];
+function makeTiles(){
+  [...board.querySelectorAll('.cell')].forEach((c,i)=>{c.style.gridArea=(Math.floor(i/4)+1)+' / '+(i%4+1)});
+  for(let i=0;i<16;i++){const t=document.createElement('div');t.className='tile';board.insertBefore(t,over);tiles.push(t)}
+}
+function emptyCells(){const r=[];for(let i=0;i<16;i++)if(grid[i]===0)r.push(i);return r}
+function spawn(){const e=emptyCells();if(!e.length)return;const i=e[Math.floor(Math.random()*e.length)];grid[i]=Math.random()<.9?2:4}
+function render(){
+  for(let i=0;i<16;i++){const v=grid[i],t=tiles[i];t.textContent=v||'';t.className='tile'+(v?' t'+v:'');t.style.gridArea=Math.floor(i/4)+1+' / '+(i%4+1)}
+  scoreEl.textContent=score;bestEl.textContent=Math.max(best,score);
+}
+function addTile(){const e=emptyCells();if(!e.length)return false;const i=e[Math.floor(Math.random()*e.length)];grid[i]=Math.random()<.9?2:4;return true}
+function move(dir){
+  let moved=false;const lines=[];
+  for(let r=0;r<4;r++)lines.push([r*4,r*4+1,r*4+2,r*4+3]);
+  if(dir==='down')lines.forEach(l=>l.reverse());
+  if(dir==='left'||dir==='right'){
+    lines.length=0;for(let r=0;r<4;r++){const l=[r*4,r*4+1,r*4+2,r*4+3];if(dir==='right')l.reverse();lines.push(l)}
+  }
+  for(const line of lines){
+    const vals=line.map(i=>grid[i]).filter(v=>v);
+    const out=[];
+    for(let i=0;i<vals.length;i++){
+      if(i+1<vals.length&&vals[i]===vals[i+1]){out.push(vals[i]*2);score+=vals[i]*2;i++}
+      else out.push(vals[i]);
+    }
+    while(out.length<4)out.push(0);
+    line.forEach((idx,k)=>{if(grid[idx]!==out[k])moved=true;grid[idx]=out[k]});
+  }
+  if(moved){
+    addTile();render();
+    if(score>best){best=score;setBest(best)}
+    if(!canMove())endGame();
+  }
+}
+function canMove(){
+  if(grid.includes(0))return true;
+  for(let r=0;r<4;r++)for(let c=0;c<4;c++){
+    const v=grid[r*4+c];
+    if(c<3&&v===grid[r*4+c+1])return true;
+    if(r<3&&v===grid[(r+1)*4+c])return true;
+  }
+  return false;
+}
+function endGame(){
+  const won=grid.includes(2048);
+  document.getElementById('overTitle').textContent=won?'达成 2048！':'游戏结束';
+  document.getElementById('overText').textContent='本局得分 '+score;
+  over.classList.add('show');
+}
+function reset(){grid=Array(16).fill(0);score=0;over.classList.remove('show');spawn();spawn();render()}
+makeTiles();reset();
+addEventListener('keydown',e=>{
+  const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',KeyW:'up',KeyS:'down',KeyA:'left',KeyD:'right'};
+  if(map[e.code]){e.preventDefault();move(map[e.code])}
+});
+let tsx=0,tsy=0;
+board.addEventListener('touchstart',e=>{tsx=e.touches[0].clientX;tsy=e.touches[0].clientY},{passive:true});
+board.addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-tsx,dy=e.changedTouches[0].clientY-tsy;
+  if(Math.abs(dx)>Math.abs(dy))move(dx>0?'right':'left');else move(dy>0?'down':'up');
+},{passive:true});
+document.getElementById('newBtn').onclick=reset;
+document.getElementById('againBtn').onclick=reset;
+</script>
+</body>
+</html>

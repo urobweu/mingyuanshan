@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>游戏 — 明园山工作室</title>
+<style>
+:root{--paper:#f5f3ee;--ink:#1c1b19;--sub:#6e6a62;--line:#d8d3c8;--accent:#9c3b2c;--wash:#ece8df;--serif:"Iowan Old Style","Palatino Linotype","Songti SC","STSong",Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1080px,calc(100% - 48px));margin:0 auto}
+.site-header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;background:rgba(245,243,238,.94);backdrop-filter:blur(8px)}
+.header-inner{display:flex;justify-content:space-between;align-items:center;height:68px}
+.logo{font-family:var(--serif);font-size:19px;font-weight:600}
+.site-nav{display:flex;gap:34px;font-size:14px;color:var(--sub)}
+.site-nav a{position:relative;padding:4px 0}
+.site-nav a:hover{color:var(--ink)}
+.site-nav a.on{color:var(--ink)}
+.site-nav a.on::after{content:"";position:absolute;left:0;bottom:-2px;width:100%;height:1px;background:var(--accent)}
+.menu-btn{display:none;background:none;border:1px solid var(--line);padding:6px 10px;border-radius:2px;cursor:pointer;color:var(--ink)}
+.crumb{font-size:12px;color:var(--sub);letter-spacing:.06em;padding:28px 0 0}
+.crumb a:hover{color:var(--accent)}
+.head{padding:40px 0 62px;border-bottom:1px solid var(--line)}
+.head h1{font-family:var(--serif);font-size:clamp(46px,7vw,72px);font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:0 0 16px}
+.head p{font-size:17px;color:var(--sub);max-width:520px;margin:0}
+.cards{padding:64px 0 96px;display:grid;grid-template-columns:1fr 1fr;gap:28px}
+.card{border:1px solid var(--line);background:var(--paper);display:flex;flex-direction:column;transition:border-color .25s,transform .25s}
+.card:hover{border-color:var(--ink);transform:translateY(-4px)}
+.card .visual{aspect-ratio:16/10;background:var(--wash);border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.card.bigcard .visual{background:#e9e3d9}
+.card .visual::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 24px,rgba(28,27,25,.05) 24px 25px)}
+.card .visual span{position:absolute;left:22px;bottom:16px;font-family:var(--serif);font-size:40px;color:var(--ink)}
+.card.bigcard .visual span{color:var(--accent)}
+.card .body{padding:28px;flex:1;display:flex;flex-direction:column}
+.card .no{font-size:11px;letter-spacing:.14em;color:var(--sub)}
+.card h2{font-family:var(--serif);font-size:30px;font-weight:600;margin:10px 0 12px}
+.card p{font-size:14px;color:var(--sub);flex:1;margin:0 0 24px}
+.card .go{border-top:1px solid var(--line);padding-top:18px;display:flex;justify-content:space-between;align-items:center;font-size:14px}
+.card .go b{font-weight:600}
+.card .go span{font-size:20px;transition:transform .2s}
+.card:hover .go span{transform:translateX(6px);color:var(--accent)}
+footer{border-top:1px solid var(--line);padding:26px 0;font-size:12px;color:var(--sub)}
+.foot-inner{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+@media(max-width:760px){.cards{grid-template-columns:1fr}.site-nav{display:none;position:absolute;top:68px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--line);flex-direction:column;gap:0;padding:8px 18px 16px}.site-nav.open{display:flex}.site-nav a{padding:11px 2px;border-bottom:1px solid var(--line)}.menu-btn{display:block}}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="index.html">明园山工作室</a>
+    <nav class="site-nav" id="nav">
+      <a href="index.html">首页</a><a class="on" href="games.html">游戏</a><a href="index.html#servers">服务器</a><a href="index.html#contact">联系</a>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="菜单">菜单</button>
+  </div>
+</header>
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / 游戏</div>
+  <div class="head">
+    <h1>游戏</h1>
+    <p>按体量分成两类。选一个方向继续。</p>
+  </div>
+  <div class="cards">
+    <a class="card" href="mini-games.html">
+      <div class="visual"><span>01</span></div>
+      <div class="body">
+        <div class="no">CATEGORY / 001</div>
+        <h2>小游戏</h2>
+        <p>分幼稚与成熟两类，共 15 款：贪吃蛇、2048、中国象棋、国际象棋等，打开即玩。</p>
+        <div class="go"><b>查看全部 15 款</b><span>→</span></div>
+      </div>
+    </a>
+    <a class="card bigcard" href="big-games.html">
+      <div class="visual"><span>02</span></div>
+      <div class="body">
+        <div class="no">CATEGORY / 002</div>
+        <h2>大游戏</h2>
+        <p>明园山生存，以及番外篇「末日火车」。体量更大的企划，提供下载入口。</p>
+        <div class="go"><b>查看全部 2 款</b><span>→</span></div>
+      </div>
+    </a>
+  </div>
+</main>
+<footer><div class="wrap foot-inner"><span>明园山工作室</span><span>© 2026 MINGYUANSHAN STUDIO</span></div></footer>
+<script>
+const b=document.getElementById('menuBtn'),n=document.getElementById('nav');
+b.addEventListener('click',()=>n.classList.toggle('open'));
+n.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>n.classList.remove('open')));
+</script>
+</body>
+</html>

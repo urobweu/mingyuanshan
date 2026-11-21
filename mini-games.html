@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>小游戏 — 明园山工作室</title>
+<style>
+:root{--paper:#f5f3ee;--ink:#1c1b19;--sub:#6e6a62;--line:#d8d3c8;--accent:#9c3b2c;--wash:#ece8df;--serif:"Iowan Old Style","Palatino Linotype","Songti SC","STSong",Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);line-height:1.7;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+.wrap{width:min(1080px,calc(100% - 48px));margin:0 auto}
+.site-header{border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20;background:rgba(245,243,238,.94);backdrop-filter:blur(8px)}
+.header-inner{display:flex;justify-content:space-between;align-items:center;height:68px}
+.logo{font-family:var(--serif);font-size:19px;font-weight:600}
+.site-nav{display:flex;gap:34px;font-size:14px;color:var(--sub)}
+.site-nav a{position:relative;padding:4px 0}
+.site-nav a:hover{color:var(--ink)}
+.site-nav a.on{color:var(--ink)}
+.site-nav a.on::after{content:"";position:absolute;left:0;bottom:-2px;width:100%;height:1px;background:var(--accent)}
+.menu-btn{display:none;background:none;border:1px solid var(--line);padding:6px 10px;border-radius:2px;cursor:pointer;color:var(--ink)}
+.crumb{font-size:12px;color:var(--sub);padding:28px 0 0}
+.crumb a:hover{color:var(--accent)}
+.head{padding:40px 0 52px;border-bottom:1px solid var(--line)}
+.head h1{font-family:var(--serif);font-size:clamp(46px,7vw,72px);font-weight:600;letter-spacing:-.02em;line-height:1.1;margin:0 0 16px}
+.head p{font-size:17px;color:var(--sub);max-width:540px;margin:0}
+.section{padding:52px 0}
+.section-title{display:flex;align-items:baseline;gap:18px;border-bottom:2px solid var(--ink);padding-bottom:14px;margin-bottom:8px;flex-wrap:wrap}
+.section-title.mature{border-bottom-color:var(--accent)}
+.section-title h2{font-family:var(--serif);font-size:32px;font-weight:600;margin:0}
+.section-title .count{font-size:12px;color:var(--sub);letter-spacing:.08em}
+.section-desc{font-size:14px;color:var(--sub);margin:14px 0 30px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.tile{border:1px solid var(--line);background:var(--paper);display:flex;flex-direction:column;transition:border-color .2s,transform .2s}
+.tile:hover{border-color:var(--ink);transform:translateY(-3px)}
+.tile .visual{aspect-ratio:16/10;background:var(--wash);border-bottom:1px solid var(--line);position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.tile .visual::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 20px,rgba(28,27,25,.045) 20px 21px)}
+.tile .visual b{font-family:var(--serif);font-size:42px;color:var(--ink);position:relative}
+.tile.mature .visual{background:#e7e1d5}
+.tile.mature .visual b{color:var(--accent)}
+.tile .body{padding:18px 20px 20px;flex:1;display:flex;flex-direction:column}
+.tile .no{font-size:10px;letter-spacing:.14em;color:var(--sub)}
+.tile h3{font-family:var(--serif);font-size:21px;font-weight:600;margin:7px 0 8px;line-height:1.3}
+.tile p{font-size:13px;color:var(--sub);flex:1;margin:0 0 16px}
+.tile .go{border-top:1px solid var(--line);padding-top:13px;font-size:13px;display:flex;justify-content:space-between;align-items:center}
+.tile .go span{font-size:18px;transition:transform .2s}
+.tile:hover .go span{transform:translateX(5px);color:var(--accent)}
+footer{border-top:1px solid var(--line);padding:26px 0;font-size:12px;color:var(--sub)}
+.foot-inner{display:flex;justify-content:space-between;flex-wrap:wrap;gap:16px}
+@media(max-width:820px){.grid{grid-template-columns:repeat(2,1fr)}.site-nav{display:none;position:absolute;top:68px;left:0;right:0;background:var(--paper);border-bottom:1px solid var(--line);flex-direction:column;gap:0;padding:8px 18px 16px}.site-nav.open{display:flex}.site-nav a{padding:11px 2px;border-bottom:1px solid var(--line)}.menu-btn{display:block}}
+@media(max-width:520px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="logo" href="index.html">明园山工作室</a>
+    <nav class="site-nav" id="nav">
+      <a href="index.html">首页</a><a class="on" href="games.html">游戏</a><a href="index.html#servers">服务器</a><a href="index.html#contact">联系</a>
+    </nav>
+    <button class="menu-btn" id="menuBtn" aria-label="菜单">菜单</button>
+  </div>
+</header>
+<main class="wrap">
+  <div class="crumb"><a href="index.html">首页</a> / <a href="games.html">游戏</a> / 小游戏</div>
+  <div class="head">
+    <h1>小游戏</h1>
+    <p>按风格分成两类。幼稚小游戏轻松上手，成熟小游戏更有挑战。</p>
+  </div>
+
+  <section class="section">
+    <div class="section-title"><h2>幼稚小游戏</h2><span class="count">03 款 · 轻松休闲</span></div>
+    <p class="section-desc">规则简单，随时来一局。</p>
+    <div class="grid">
+      <a class="tile" href="block-parkour.html"><div class="visual"><b>01</b></div><div class="body"><div class="no">GAME / 001</div><h3>方块跑酷</h3><p>控制方块跨越断层，速度逐渐提升，看你能跑多远。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile" href="treasure-hunt.html"><div class="visual"><b>02</b></div><div class="body"><div class="no">GAME / 002</div><h3>明园山寻宝</h3><p>网格中捕捉随机出现的目标，限时 30 秒，连击加分。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile" href="star-collector.html"><div class="visual"><b>03</b></div><div class="body"><div class="no">GAME / 003</div><h3>星星收集者</h3><p>移动篮子接住星星、避开落石，三条命挑战高分。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="section-title mature"><h2>成熟小游戏</h2><span class="count">12 款 · 策略与挑战</span></div>
+    <p class="section-desc">画布更大，玩法更深。挑一款慢慢玩。</p>
+    <div class="grid">
+      <a class="tile mature" href="snake.html"><div class="visual"><b>01</b></div><div class="body"><div class="no">GAME / 001</div><h3>贪吃蛇对战</h3><p>单人地图闯关，或与人机 AI 比拼得分，多种难度。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="game-2048.html"><div class="visual"><b>02</b></div><div class="body"><div class="no">GAME / 002</div><h3>2048</h3><p>合并相同数字，规划走位，凑出 2048。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="tetris.html"><div class="visual"><b>03</b></div><div class="body"><div class="no">GAME / 003</div><h3>俄罗斯方块</h3><p>旋转堆叠方块消行，速度随等级提升。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="minesweeper.html"><div class="visual"><b>04</b></div><div class="body"><div class="no">GAME / 004</div><h3>扫雷</h3><p>五级难度，含 50×30 地狱棋盘，靠数字推理排雷。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="gomoku.html"><div class="visual"><b>05</b></div><div class="body"><div class="no">GAME / 005</div><h3>五子棋</h3><p>执黑先手，与电脑对弈，先连五子者获胜。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="sudoku.html"><div class="visual"><b>06</b></div><div class="body"><div class="no">GAME / 006</div><h3>数独</h3><p>九宫格填数，五种难度含极限少提示，支持检查与提示。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="breakout.html"><div class="visual"><b>07</b></div><div class="body"><div class="no">GAME / 007</div><h3>打砖块</h3><p>控制挡板反弹小球，逐关击碎所有砖块。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="flappy.html"><div class="visual"><b>08</b></div><div class="body"><div class="no">GAME / 008</div><h3>飞行挑战</h3><p>拍动翅膀穿过管道，考验节奏与手感。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="memory.html"><div class="visual"><b>09</b></div><div class="body"><div class="no">GAME / 009</div><h3>记忆翻牌</h3><p>翻开卡片找配对，六种规格含 99×99 极限地图。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="racer.html"><div class="visual"><b>10</b></div><div class="body"><div class="no">GAME / 010</div><h3>极速赛车</h3><p>躲避车流，速度越来越快，挑战最远里程。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="xiangqi.html"><div class="visual"><b>11</b></div><div class="body"><div class="no">GAME / 011</div><h3>中国象棋</h3><p>完整规则人机对弈，五档难度从新手必败到不可能必胜。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+      <a class="tile mature" href="chess.html"><div class="visual"><b>12</b></div><div class="body"><div class="no">GAME / 012</div><h3>国际象棋</h3><p>支持易位与升变，五档难度，挑战不同胜率的电脑。</p><div class="go">开始游玩 <span>→</span></div></div></a>
+    </div>
+  </section>
+</main>
+<footer><div class="wrap foot-inner"><span>明园山工作室</span><span>© 2026 MINGYUANSHAN STUDIO</span></div></footer>
+<script>
+const b=document.getElementById('menuBtn'),n=document.getElementById('nav');
+b.addEventListener('click',()=>n.classList.toggle('open'));
+n.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>n.classList.remove('open')));
+</script>
+</body>
+</html>

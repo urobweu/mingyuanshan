@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>扫雷 — 明园山工作室</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#e2e8f0;--sub:#94a3b8;--accent:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC",sans-serif;min-height:100vh;padding:18px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.topbar{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px}
+.topbar a{color:var(--sub);text-decoration:none;border:1px solid var(--line);padding:7px 13px;border-radius:4px}
+.topbar a:hover{color:var(--accent);border-color:var(--accent)}
+.topbar span{color:#64748b;letter-spacing:.1em}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:18px}
+.hud{width:100%;max-width:560px;display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:12px}
+.levels{display:flex;gap:8px}
+.levels button{background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:7px 12px;font-size:13px;cursor:pointer}
+.levels button.on{background:var(--accent);color:#052e16;border-color:var(--accent);font-weight:700}
+.stats{display:flex;gap:18px;font-size:14px}
+.stats b{font-variant-numeric:tabular-nums;color:var(--accent)}
+.face{background:#334155;border:1px solid var(--line);border-radius:5px;width:38px;height:38px;font-size:18px;cursor:pointer;color:var(--text)}
+#grid{display:grid;gap:2px;overflow:auto;max-width:calc(100vw - 32px)}
+.cell{width:30px;height:30px;background:#243b53;border:1px solid #2f4a66;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;cursor:pointer;user-select:none;color:#e2e8f0}
+.cell.open{background:#1b2b3f;border-color:#1b2b3f;cursor:default}
+.cell.flag{color:#f87171}
+.cell.mine{background:#7f1d1d;border-color:#7f1d1d}
+.cell.boom{background:#dc2626}
+.cell.n1{color:#60a5fa}.cell.n2{color:#4ade80}.cell.n3{color:#f87171}.cell.n4{color:#c084fc}.cell.n5{color:#fb923c}.cell.n6{color:#22d3ee}.cell.n7{color:#e2e8f0}.cell.n8{color:#94a3b8}
+.help{font-size:12px;color:var(--sub);margin-top:16px;text-align:center;line-height:1.9;max-width:560px}
+</style>
+</head>
+<body>
+<div class="topbar"><a href="mini-games.html">← 返回成熟小游戏</a><span>MINGYUANSHAN / MINESWEEPER</span></div>
+<div class="hud">
+  <div class="levels">
+    <button data-lv="0" class="on">初级</button><button data-lv="1">中级</button><button data-lv="2">高级</button><button data-lv="3">极限</button><button data-lv="4">地狱</button>
+  </div>
+  <div class="stats"><span>雷 <b id="mineLeft">10</b></span><span>时间 <b id="time">0</b></span><button class="face" id="face">🙂</button></div>
+</div>
+<div class="panel"><div id="grid"></div></div>
+<div class="help">左键翻开格子 · 右键插旗 · 翻开所有非雷格子即获胜 · 首次点击保证安全</div>
+<script>
+const LV=[{c:9,r:9,m:10},{c:16,r:16,m:40},{c:30,r:16,m:99},{c:40,r:24,m:200},{c:50,r:30,m:400}];
+const gridEl=document.getElementById('grid'),mineLeftEl=document.getElementById('mineLeft'),timeEl=document.getElementById('time'),faceEl=document.getElementById('face');
+let lv=0,cols,rows,totalMines,cells,mines,opened,flagged,started,over,timer,tSec;
+function idx(r,c){return r*cols+c}
+function neighbors(i){const r=Math.floor(i/cols),c=i%cols,a=[];for(let dr=-1;dr<=1;dr++)for(let dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;const nr=r+dr,nc=c+dc;if(nr>=0&&nr<rows&&nc>=0&&nc<cols)a.push(idx(nr,nc))}return a}
+function init(){
+  clearInterval(timer);const L=LV[lv];cols=L.c;rows=L.r;totalMines=L.m;
+  gridEl.style.gridTemplateColumns='repeat('+cols+',30px)';gridEl.innerHTML='';
+  cells=[];mines=new Set();opened=0;flagged=0;started=false;over=false;tSec=0;
+  timeEl.textContent='0';faceEl.textContent='🙂';
+  for(let i=0;i<cols*rows;i++){
+    const d=document.createElement('div');d.className='cell';d.dataset.i=i;
+    d.addEventListener('click',()=>open(i));
+    d.addEventListener('contextmenu',e=>{e.preventDefault();flag(i)});
+    gridEl.appendChild(d);cells.push(d);
+  }
+  updateMineLeft();
+}
+function placeMines(safe){
+  const ban=new Set([safe,...neighbors(safe)]);const pool=[];
+  for(let i=0;i<cols*rows;i++)if(!ban.has(i))pool.push(i);
+  for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]]}
+  pool.slice(0,totalMines).forEach(i=>mines.add(i));
+}
+function startTimer(){started=true;timer=setInterval(()=>{tSec++;timeEl.textContent=Math.min(tSec,999)},1000)}
+function open(i){
+  if(over||cells[i].classList.contains('flag')||cells[i].classList.contains('open'))return;
+  if(!started){placeMines(i);startTimer()}
+  if(mines.has(i)){cells[i].classList.add('open','mine','boom');cells[i].textContent='💣';lose();return}
+  flood(i);
+  if(opened===cols*rows-totalMines)win();
+}
+function flood(start){
+  const stack=[start],seen=new Set();
+  while(stack.length){
+    const i=stack.pop();if(seen.has(i))continue;seen.add(i);
+    const c=cells[i];if(c.classList.contains('open')||c.classList.contains('flag'))continue;
+    if(mines.has(i))continue;
+    c.classList.add('open');opened++;
+    const n=neighbors(i).filter(j=>mines.has(j)).length;
+    if(n){c.textContent=n;c.classList.add('n'+n)}
+    else{c.textContent='';neighbors(i).forEach(j=>{if(!cells[j].classList.contains('open')&&!seen.has(j))stack.push(j)})}
+  }
+}
+function flag(i){
+  if(over||cells[i].classList.contains('open'))return;
+  const c=cells[i];
+  if(c.classList.contains('flag')){c.classList.remove('flag');c.textContent='';flagged--}
+  else{if(flagged>=totalMines)return;c.classList.add('flag');c.textContent='🚩';flagged++}
+  updateMineLeft();
+}
+function updateMineLeft(){mineLeftEl.textContent=totalMines-flagged}
+function lose(){
+  over=true;clearInterval(timer);faceEl.textContent='😵';
+  mines.forEach(i=>{cells[i].classList.add('mine');if(!cells[i].classList.contains('flag'))cells[i].textContent='💣'});
+}
+function win(){
+  over=true;clearInterval(timer);faceEl.textContent='😎';
+  mines.forEach(i=>{if(!cells[i].classList.contains('flag')){cells[i].classList.add('flag');cells[i].textContent='🚩';flagged++}});
+  updateMineLeft();
+}
+faceEl.onclick=init;
+document.querySelectorAll('.levels button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.levels button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');lv=+b.dataset.lv;init();
+});
+init();
+</script>
+</body>
+</html>

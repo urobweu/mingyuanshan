@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>记忆翻牌 — 明园山工作室</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--line:#334155;--text:#e2e8f0;--sub:#94a3b8;--accent:#22c55e}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:Inter,"PingFang SC",sans-serif;min-height:100vh;padding:18px 16px 40px;display:flex;flex-direction:column;align-items:center}
+.topbar{width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px}
+.topbar a{color:var(--sub);text-decoration:none;border:1px solid var(--line);padding:7px 13px;border-radius:4px}
+.topbar a:hover{color:var(--accent);border-color:var(--accent)}
+.topbar span{color:#64748b;letter-spacing:.1em}
+.hud{width:100%;max-width:900px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px}
+.levels{display:flex;gap:8px;flex-wrap:wrap}
+.levels button{background:transparent;color:var(--sub);border:1px solid var(--line);border-radius:4px;padding:7px 12px;font-size:13px;cursor:pointer}
+.levels button.on{background:var(--accent);color:#052e16;border-color:var(--accent);font-weight:700}
+.levels button.extreme{border-color:#b45309;color:#fbbf24}
+.levels button.extreme.on{background:#b45309;color:#fff;border-color:#f59e0b}
+.stats{display:flex;gap:16px;font-size:14px}.stats b{color:var(--accent);font-variant-numeric:tabular-nums}
+#wrap{width:100%;max-height:72vh;overflow:auto}
+#grid{display:grid;gap:10px;width:min(620px,calc(100vw - 32px))}
+#grid.extreme{gap:2px;width:max-content}
+.card{aspect-ratio:3/4;perspective:600px;cursor:pointer}
+.inner{position:relative;width:100%;height:100%;transition:transform .4s;transform-style:preserve-3d}
+.card.flip .inner{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:clamp(24px,6vw,44px);border:2px solid}
+.front{background:var(--panel);border-color:var(--line);color:#475569}
+.back{background:#14342a;border-color:var(--accent);transform:rotateY(180deg)}
+.card.done .back{border-color:#facc15;background:#3b2f0b}
+.card.mini{width:14px;height:14px;aspect-ratio:auto;border-radius:2px;background:#243b53;border:1px solid #334155;color:#64748b;font-size:8px;line-height:1;display:flex;align-items:center;justify-content:center;overflow:hidden;padding:0}
+.card.mini.flip{background:#14342a;color:#4ade80;border-color:#22c55e}
+.card.mini.done{background:#3b2f0b;color:#facc15;border-color:#facc15;opacity:.85}
+.bar{width:min(620px,calc(100vw - 32px));margin-top:16px}
+.btn{background:var(--accent);color:#052e16;border:0;border-radius:5px;padding:11px 20px;font-size:14px;font-weight:700;cursor:pointer;width:100%}
+.btn:hover{filter:brightness(1.12)}
+.msg{font-size:13px;color:var(--sub);margin-top:12px;text-align:center;min-height:20px}
+</style>
+</head>
+<body>
+<div class="topbar"><a href="mini-games.html">← 返回成熟小游戏</a><span>MINGYUANSHAN / MEMORY</span></div>
+<div class="hud">
+  <div class="levels"><button data-lv="0" class="on">4 × 3</button><button data-lv="1">4 × 4</button><button data-lv="2">6 × 4</button><button data-lv="3">8 × 6</button><button data-lv="4">10 × 8</button><button data-lv="5" class="extreme">99 × 99 极限</button></div>
+  <div class="stats"><span>步数 <b id="moves">0</b></span><span>配对 <b id="pairs">0/6</b></span></div>
+</div>
+<div id="wrap"><div id="grid"></div></div>
+<div class="bar"><button class="btn" id="newBtn">新游戏</button></div>
+<div class="msg" id="msg">翻开两张卡片，找出相同的图案。</div>
+<script>
+const LV=[{r:4,c:3},{r:4,c:4},{r:6,c:4},{r:8,c:6},{r:10,c:8},{r:99,c:99,extreme:true}];
+const ICONS=['▲','●','◆','■','★','⬟','✦','◈','⬢','✧','◐','♜','♞','♝','♩','♫','☀','☁','☂','☃','☎','☏','⌘','⌛','⏳','⚑','⚙','⚔'];
+const gridEl=document.getElementById('grid'),movesEl=document.getElementById('moves'),pairsEl=document.getElementById('pairs'),msgEl=document.getElementById('msg');
+let lv=0,rows,cols,deck,first,second,lock,moves,pairs,pairCount,extreme;
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a}
+function init(){
+  const L=LV[lv];rows=L.r;cols=L.c;extreme=!!L.extreme;
+  const total=rows*cols;pairCount=Math.floor(total/2);
+  if(extreme){
+    deck=[];for(let i=0;i<pairCount;i++){const s=String(i+1);deck.push(s,s)}
+    if(total%2)deck.push('JOKER');
+  }else{
+    const chosen=ICONS.slice(0,pairCount);deck=[...chosen,...chosen];
+  }
+  shuffle(deck);
+  gridEl.className=extreme?'extreme':'';
+  gridEl.style.gridTemplateColumns='repeat('+cols+','+(extreme?'14px':'1fr')+')';
+  gridEl.style.width=extreme?'max-content':'min(620px,calc(100vw - 32px))';
+  gridEl.innerHTML='';first=null;second=null;lock=false;moves=0;pairs=0;
+  movesEl.textContent='0';pairsEl.textContent='0/'+pairCount;
+  msgEl.textContent=extreme?'极限模式：9800 张牌 + 1 张万能牌，可滚动地图。':'翻开两张卡片，找出相同的图案。';
+  deck.forEach((icon,i)=>{
+    const card=document.createElement('div');card.dataset.i=i;
+    if(extreme){card.className='card mini';card.textContent='?'}
+    else{card.className='card';card.innerHTML='<div class="inner"><div class="face front">?</div><div class="face back">'+icon+'</div></div>'}
+    card.onclick=()=>flip(card,i);
+    gridEl.appendChild(card);
+  });
+}
+function newPairCount(){pairsEl.textContent=pairs+'/'+pairCount}
+function flip(card,i){
+  if(lock||card.classList.contains('flip')||card.classList.contains('done'))return;
+  if(extreme){
+    card.textContent=deck[i];card.classList.add('flip');
+    if(deck[i]==='JOKER'){
+      setTimeout(()=>{card.classList.add('done');pairs++;newPairCount();msgEl.textContent='万能牌自动配对。';checkWin()},120);
+      return;
+    }
+  }else card.classList.add('flip');
+  if(first===null){first={card,i};return}
+  second={card,i};moves++;movesEl.textContent=moves;lock=true;
+  if(deck[first.i]===deck[second.i]){
+    setTimeout(()=>{
+      first.card.classList.add('done');second.card.classList.add('done');
+      pairs++;newPairCount();msgEl.textContent='配对成功！';
+      resetPick();checkWin();
+    },extreme?120:420);
+  }else{
+    setTimeout(()=>{
+      if(extreme){first.card.textContent='?';second.card.textContent='?'}
+      first.card.classList.remove('flip');second.card.classList.remove('flip');
+      msgEl.textContent='不相同，再试一次。';resetPick();
+    },extreme?220:750);
+  }
+}
+function resetPick(){first=null;second=null;lock=false}
+function checkWin(){if(pairs===pairCount)msgEl.textContent='全部完成！共用了 '+moves+' 步。'}
+document.getElementById('newBtn').onclick=init;
+document.querySelectorAll('.levels button').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.levels button').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');lv=+b.dataset.lv;init();
+});
+init();
+</script>
+</body>
+</html>
